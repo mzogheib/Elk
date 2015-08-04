@@ -1,0 +1,38 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "Marwan Zogheib",
+    "longName": "Elk",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/Elk_trans.png",
+                "name": "IMAGE_BACKGROUND",
+                "type": "png"
+            },
+            {
+                "file": "fonts/Trebuchet MS.ttf",
+                "name": "FONT_CUSTOM_40",
+                "type": "font"
+            },
+            {
+                "file": "fonts/Trebuchet MS.ttf",
+                "name": "FONT_CUSTOM_19",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Elk",
+    "targetPlatforms": [
+        "basalt"
+    ],
+    "uuid": "2dbf8b99-a2d3-47bb-87ef-8090500ae9c1",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
