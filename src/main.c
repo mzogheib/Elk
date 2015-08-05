@@ -19,9 +19,8 @@ GSize image_size;
 
 GFont custom_font;
 
-
 // Returns the time
-char *write_time(struct tm tick_time) {
+static char *write_time(struct tm tick_time) {
   // Create a long-lived buffer
   static char buffer[] = "00:00";
 
@@ -41,7 +40,7 @@ char *write_time(struct tm tick_time) {
 }
 
 // Returns the date suffix
-char *date_suffix(char date[]) {
+static char *date_suffix(char date[]) {
   static char suffix[] = "th";
   
   if(strcmp(date, "1")==0 || strcmp(date, "21")==0 || strcmp(date, "31")==0) strcpy(suffix, "st");
@@ -53,7 +52,7 @@ char *date_suffix(char date[]) {
 }
 
 // Returns the date
-char *write_date(struct tm tick_time) {
+static char *write_date(struct tm tick_time) {
   // Create a long-lived buffer
   static char buffer[] = "WEDNESDAY 30TH";
   static char day[] = "WEDNESDAY ";
@@ -71,17 +70,45 @@ char *write_date(struct tm tick_time) {
   return (char *)buffer;  
 }
 
+// Change the date text colour based on battery level
+static void handle_battery(BatteryChargeState charge_state) {
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Battery = %d", charge_state.charge_percent); 
+  
+  // If charging or plugged in: Green
+  // Else if unplugged: White, yellow or red depending on battery level
+  if(charge_state.is_charging || charge_state.is_plugged) {
+    text_layer_set_text_color(date_layer, GColorGreen);
+  } else {
+    //charge_state = battery_state_service_peek();
+    if(charge_state.charge_percent>20) {
+      text_layer_set_text_color(date_layer, GColorWhite);
+    } else if(charge_state.charge_percent>10) {
+      text_layer_set_text_color(date_layer, GColorYellow);
+    } else if(charge_state.charge_percent<=10) {
+      text_layer_set_text_color(date_layer, GColorRed);
+    } 
+  }
+  //static char s_battery_buffer[32];
+  //snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d/100", charge_state.charge_percent);
+  //text_layer_set_text(date_layer, s_battery_buffer);
+}
+
 // Run this function at every tick of the clock, i.e. second or minute
-void handle_tick(struct tm *tick_time, TimeUnits units){  
+static void handle_tick(struct tm *tick_time, TimeUnits units){  
   // Write the current time and date
   text_layer_set_text(time_layer, write_time(*tick_time));
   text_layer_set_text(date_layer, write_date(*tick_time));
+  //handle_battery(battery_state_service_peek());
 }
 
 // Initialize err'thang
-void handle_init(void) {
+static void handle_init(void) {
   my_window = window_create();
   Layer *window_layer = window_get_root_layer(my_window);
+  
+  // Subscribe to the battery
+  battery_state_service_subscribe(handle_battery);
   
   // Init the image & layer. 
   image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
@@ -127,7 +154,10 @@ void handle_init(void) {
   tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
   text_layer_set_text(time_layer, write_time(*tick_time));
   text_layer_set_text(date_layer, write_date(*tick_time));
+  
 
+ 
+ 
   // Add all layers to the window layer
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));
   layer_add_child(window_layer, text_layer_get_layer(time_layer));
@@ -138,13 +168,15 @@ void handle_init(void) {
 
 }
 
-void handle_deinit(void) {
+static void handle_deinit(void) {
   text_layer_destroy(time_layer);
   text_layer_destroy(date_layer);
   text_layer_destroy(date_layer_bg);
   bitmap_layer_destroy(image_layer);
   gbitmap_destroy(image);
   fonts_unload_custom_font(custom_font);
+  tick_timer_service_unsubscribe();
+  battery_state_service_unsubscribe();
   window_destroy(my_window);
 }
 
