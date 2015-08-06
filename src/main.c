@@ -1,11 +1,3 @@
-/*
-  WISH LIST
-
-  Battery = 20% --> date text colour = yellow
-  Battert = 10% --> date text colour = red
-
-*/
-
 #include <pebble.h>
 
 Window *my_window;
@@ -54,8 +46,8 @@ static char *date_suffix(char date[]) {
 // Returns the date
 static char *write_date(struct tm tick_time) {
   // Create a long-lived buffer
-  static char buffer[] = "WEDNESDAY 30TH";
-  static char day[] = "WEDNESDAY ";
+  static char buffer[] = "Wednesday 30th";
+  static char day[] = "Wednesday ";
   static char date[] = "30";
   
   strftime(day, sizeof(day), "%A ", &tick_time);
@@ -72,26 +64,27 @@ static char *write_date(struct tm tick_time) {
 
 // Change the date text colour based on battery level
 static void handle_battery(BatteryChargeState charge_state) {
-
-  APP_LOG(APP_LOG_LEVEL_INFO, "Battery = %d", charge_state.charge_percent); 
-  
   // If charging or plugged in: Green
   // Else if unplugged: White, yellow or red depending on battery level
+  APP_LOG(APP_LOG_LEVEL_INFO, "Battery = %d", charge_state.charge_percent);
+  
   if(charge_state.is_charging || charge_state.is_plugged) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Charging/Plugged");
     text_layer_set_text_color(date_layer, GColorGreen);
   } else {
     //charge_state = battery_state_service_peek();
-    if(charge_state.charge_percent>20) {
-      text_layer_set_text_color(date_layer, GColorWhite);
-    } else if(charge_state.charge_percent>10) {
+    if(charge_state.charge_percent==20) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "in 20percent");
       text_layer_set_text_color(date_layer, GColorYellow);
-    } else if(charge_state.charge_percent<=10) {
+    } else if(charge_state.charge_percent==10) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "in 10percent");
       text_layer_set_text_color(date_layer, GColorRed);
-    } 
+    } else {
+      APP_LOG(APP_LOG_LEVEL_INFO, "in >20percent");
+      text_layer_set_text_color(date_layer, GColorWhite);
+    }
   }
-  //static char s_battery_buffer[32];
-  //snprintf(s_battery_buffer, sizeof(s_battery_buffer), "%d/100", charge_state.charge_percent);
-  //text_layer_set_text(date_layer, s_battery_buffer);
+
 }
 
 // Run this function at every tick of the clock, i.e. second or minute
@@ -99,16 +92,12 @@ static void handle_tick(struct tm *tick_time, TimeUnits units){
   // Write the current time and date
   text_layer_set_text(time_layer, write_time(*tick_time));
   text_layer_set_text(date_layer, write_date(*tick_time));
-  //handle_battery(battery_state_service_peek());
 }
 
 // Initialize err'thang
 static void handle_init(void) {
   my_window = window_create();
   Layer *window_layer = window_get_root_layer(my_window);
-  
-  // Subscribe to the battery
-  battery_state_service_subscribe(handle_battery);
   
   // Init the image & layer. 
   image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
@@ -132,7 +121,7 @@ static void handle_init(void) {
   date_layer = text_layer_create(GRect(date_layer_x, date_layer_y+1, date_layer_w, date_layer_h));
   
   // Init colours & alignment
-  /* Define black and white mode here */
+  /* Define black and white mode here if Aplite support is required*/
   text_layer_set_background_color(time_layer, GColorClear);
   text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
   text_layer_set_background_color(date_layer, GColorClear);
@@ -146,17 +135,17 @@ static void handle_init(void) {
   text_layer_set_text_color(time_layer, GColorBlack);
   custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_19));
   text_layer_set_font(date_layer, custom_font);  
-  text_layer_set_text_color(date_layer, GColorWhite);
+  // Subscribe to the battery and change the date font colour (within the handler)
+  battery_state_service_subscribe(handle_battery);
+  handle_battery(battery_state_service_peek());
+
   
   // Finally, write the time on start up
   time_t temp = time(NULL); 
-  struct tm *tick_time = localtime(&temp);  // Find a way to not use temp
+  struct tm *tick_time = localtime(&temp);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_tick);
   text_layer_set_text(time_layer, write_time(*tick_time));
-  text_layer_set_text(date_layer, write_date(*tick_time));
-  
-
- 
+  text_layer_set_text(date_layer, write_date(*tick_time)); 
  
   // Add all layers to the window layer
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));

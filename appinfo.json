@@ -9,6 +9,12 @@
     "resources": {
         "media": [
             {
+                "file": "images/Elk small.png",
+                "menuIcon": true,
+                "name": "IMAGE_ELK_SMALL",
+                "type": "png"
+            },
+            {
                 "file": "images/Elk_trans.png",
                 "name": "IMAGE_BACKGROUND",
                 "type": "png"
